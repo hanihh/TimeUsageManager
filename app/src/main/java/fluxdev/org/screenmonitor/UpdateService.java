@@ -8,6 +8,8 @@ import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.util.Date;
+
 public class UpdateService extends Service {
     public UpdateService() {
     }
@@ -20,6 +22,8 @@ public class UpdateService extends Service {
         // REGISTER RECEIVER THAT HANDLES SCREEN ON AND SCREEN OFF LOGIC
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
+        filter.addAction(Intent.ACTION_BOOT_COMPLETED);
+
         BroadcastReceiver mReceiver = new ScreenReceiver();
         registerReceiver(mReceiver, filter);
     }
@@ -27,12 +31,16 @@ public class UpdateService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
+            Session session;
             boolean screenOff = intent.getBooleanExtra("screen_state", false);
             if (screenOff) {
                 Log.i("Service", "Screen Off");
-                //Toast.makeText(this, "Screen Went Off", Toast.LENGTH_LONG).show();
+                //session = Session.findWithQuery(Session.class, "select * from session order by startDate limit 1");
+                Toast.makeText(this, "Screen Went Off", Toast.LENGTH_LONG).show();
             } else {
-                //Toast.makeText(this, "Screen Went On", Toast.LENGTH_LONG).show();
+                session = new Session( new Date(), new Date());
+                session.save();
+                Toast.makeText(this, new Date().toString(), Toast.LENGTH_LONG).show();
                 Log.i("Service", "Screen On");
             }
         } else {

@@ -1,25 +1,27 @@
 package fluxdev.org.screenmonitor;
 
+import com.orm.SugarRecord;
+
 import java.util.Date;
 
 /**
  * Created by hiba on 5/10/15.
  */
-public class Session {
-    private int id;
+public class Session extends SugarRecord<Session>{
     private Date startDate;
     private Date endDate;
-
+    //private int seconds;
     public Session() {}
 
     public Session(Date startDate, Date endDate) {
         this.startDate = startDate;
         this.endDate = endDate;
+        //this.seconds = startDate.compareTo(endDate);
     }
 
     public int getSessionSeconds() {
         if (this.endDate == null)
-            return 0;
+            return new Date().compareTo(startDate);
         return endDate.compareTo(startDate);
     }
 
@@ -29,13 +31,14 @@ public class Session {
         //sb.append(startDate.)
     }
 
-    public int getId() {
-        return id;
-    }
+    //public int getId() {
+    //    return id;
+    //}
 
-    public void setId(int id) {
-        this.id = id;
-    }
+    //public void setId(int id) {
+     //   this.id = id;
+    //}
+
 
     public Date getStartDate() {
         return startDate;
@@ -52,6 +55,7 @@ public class Session {
     public void setEndDate(Date endDate) {
         this.endDate = endDate;
     }
+
 
 
 }
