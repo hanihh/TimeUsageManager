@@ -15,7 +15,7 @@ public class ScreenReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
             screenOff = false;
-        } else if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
+        } else if ((intent.getAction().equals(Intent.ACTION_SCREEN_OFF))||(intent.getAction().equals(Intent.ACTION_SHUTDOWN))) {
             screenOff = true;
         } else if (intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
             screenOff = false;

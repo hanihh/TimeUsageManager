@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.util.Date;
+
 
 public class MainActivity extends ActionBarActivity {
 
@@ -13,6 +15,11 @@ public class MainActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //Session session = new Session(new Date(), new Date());
+        //Category cat = new Category();
+        //cat.save();
+        //session.save();
         Intent serviceIntent = new Intent("org.fluxdev.START_SERVICE");
         this.startService(serviceIntent);
     }
