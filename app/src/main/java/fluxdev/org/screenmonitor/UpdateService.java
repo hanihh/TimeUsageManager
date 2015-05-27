@@ -11,12 +11,15 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.getbase.floatingactionbutton.FloatingActionButton;
 
 import java.util.Date;
 import java.util.Timer;
@@ -26,7 +29,7 @@ public class UpdateService extends Service {
     private static Timer heartbeatTimer = new Timer();
     private static CountDownTimer lockActivityTimer;
     private WindowManager windowManager;
-    private ImageView alarmImage;
+    private FloatingActionButton button;
 
     private Context ctx;
 
@@ -88,14 +91,14 @@ public class UpdateService extends Service {
                 }
                 Log.i("Service", "Screen Off");
                 try { // 3.Remove the alert if exist !
-                    if ((alarmImage != null) && (alarmImage.isShown()))
-                        windowManager.removeView(alarmImage);
+                    if (button != null)
+                        windowManager.removeView(button);
                 } catch (final IllegalArgumentException e) {
                     Log.i("UpdateService", "IllegalArgumentException");
                 } catch (final Exception e) {
                     Log.i("Service", "Exception");
                 } finally {
-                    alarmImage = null;
+                    button = null;
                 }
 
                 // 4.Save Session with end date
@@ -107,11 +110,13 @@ public class UpdateService extends Service {
             } else { // Screen On
                 // 1. Handle unexpected shutdown
                 Session last = Session.getLast();
-                if (last.getEndDate() == null) {
-                    HeartBeat beat = HeartBeat.load(HeartBeat.class, 1);
-                    if (beat.getBeat() != null) {
-                        last.setEndDate(beat.getBeat());
-                        last.save();
+                if (last != null) {
+                    if (last.getEndDate() == null) {
+                        HeartBeat beat = HeartBeat.load(HeartBeat.class, 1);
+                        if (beat.getBeat() != null) {
+                            last.setEndDate(beat.getBeat());
+                            last.save();
+                        }
                     }
                 }
 
@@ -122,12 +127,12 @@ public class UpdateService extends Service {
                 // 3. Start the 20 minutes alarm
                 //lockActivityTimer = new CountDownTimer(18000000,12000000) // Timer for 5 hours with step 20 minutes
 
-                lockActivityTimer = new CountDownTimer(1800000,120000) // Timer for 5 hours with step 20 minutes
+                lockActivityTimer = new CountDownTimer(1800000,12000) // Timer for 5 hours with step 20 minutes
                 {
                     @Override
                     public void onTick(long millisUntilFinished)
                     {
-                        if (millisUntilFinished <= 1800000 - 120000) {
+                        if (millisUntilFinished <= 1800000 - 12000) {
                             Toast.makeText(ctx, String.valueOf(millisUntilFinished), Toast.LENGTH_LONG).show();
                             displayView();
                         }
@@ -152,23 +157,27 @@ public class UpdateService extends Service {
     }
 
     public void displayView() {
-        ImageButton button = new ImageButton(ctx);
 
-        Toast.makeText(ctx, "tick", Toast.LENGTH_LONG).show();
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         try { // 3.Remove the alert if exist !
-            if ((alarmImage != null) && (alarmImage.isShown()))
-                windowManager.removeView(alarmImage);
+            if (button != null)
+                windowManager.removeView(button);
         } catch (final IllegalArgumentException e) {
             Log.i("UpdateService", "IllegalArgumentException");
         } catch (final Exception e) {
             Log.i("Service", "Exception");
         } finally {
-            alarmImage = null;
+            button = null;
         }
-        alarmImage = new ImageView(ctx);
-        alarmImage.setImageResource(R.drawable.abc_ic_menu_cut_mtrl_alpha);
-
+        //alarmImage = new ImageView(ctx);
+        //alarmImage.setImageResource(R.drawable.abc_ic_menu_cut_mtrl_alpha);
+        button = new FloatingActionButton(ctx);//(FloatingActionButton) layout.findViewById(R.id.pink_icon);
+        button.setSize(FloatingActionButton.SIZE_MINI);
+        button.setColorNormalResId(R.color.pink);
+        button.setColorPressedResId(R.color.pink_pressed);
+        button.setIcon(R.drawable.abc_ic_menu_cut_mtrl_alpha);
+        button.setStrokeVisible(false);
+        Toast.makeText(ctx, "tick", Toast.LENGTH_LONG).show();
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -179,10 +188,10 @@ public class UpdateService extends Service {
         params.gravity = Gravity.TOP | Gravity.LEFT;
         params.x = 0;
         params.y = 100;
+        windowManager.addView(button, params);
+        //windowManager.addView(alarmImage, params);
 
-        windowManager.addView(alarmImage, params);
-
-        alarmImage.setOnTouchListener(new View.OnTouchListener() {
+        button.setOnTouchListener(new View.OnTouchListener() {
             private int initialX;
             private int initialY;
             private float initialTouchX;
@@ -194,6 +203,7 @@ public class UpdateService extends Service {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
                         Toast.makeText(ctx, "tick", Toast.LENGTH_LONG).show();
+
                         initialX = params.x;
                         initialY = params.y;
                         initialTouchX = event.getRawX();
@@ -204,7 +214,7 @@ public class UpdateService extends Service {
                     case MotionEvent.ACTION_MOVE:
                         params.x = initialX + (int) (event.getRawX() - initialTouchX);
                         params.y = initialY + (int) (event.getRawY() - initialTouchY);
-                        windowManager.updateViewLayout(alarmImage, params);
+                        windowManager.updateViewLayout(v, params);
                         return true;
                 }
                 return false;
@@ -222,6 +232,6 @@ public class UpdateService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (alarmImage != null) windowManager.removeView(alarmImage);
+        if (button != null) windowManager.removeView(button);
     }
 }
