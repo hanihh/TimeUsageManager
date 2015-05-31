@@ -1,5 +1,6 @@
 package fluxdev.org.screenmonitor;
 
+import android.app.AlertDialog;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -17,10 +18,15 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TableLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.getbase.floatingactionbutton.FloatingActionButton;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -30,7 +36,8 @@ public class UpdateService extends Service {
     private static CountDownTimer lockActivityTimer;
     private WindowManager windowManager;
     private FloatingActionButton button;
-
+    private LinearLayout countdownLayout;
+    private FloatingActionButton closebutton;
     private Context ctx;
 
     Session activeSession;
@@ -106,7 +113,7 @@ public class UpdateService extends Service {
                 activeSession.setEndDate(new Date());
                 activeSession.setDuration(activeSession.getSessionSeconds());
                 activeSession.save();
-                Toast.makeText(this, "Screen Went Off", Toast.LENGTH_LONG).show();
+                //Toast.makeText(this, "Screen Went Off", Toast.LENGTH_LONG).show();
             } else { // Screen On
                 // 1. Handle unexpected shutdown
                 Session last = Session.getLast();
@@ -127,13 +134,13 @@ public class UpdateService extends Service {
                 // 3. Start the 20 minutes alarm
                 //lockActivityTimer = new CountDownTimer(18000000,12000000) // Timer for 5 hours with step 20 minutes
 
-                lockActivityTimer = new CountDownTimer(1800000,12000) // Timer for 5 hours with step 20 minutes
+                lockActivityTimer = new CountDownTimer(1800000,6000) // Timer for 5 hours with step 20 minutes
                 {
                     @Override
                     public void onTick(long millisUntilFinished)
                     {
-                        if (millisUntilFinished <= 1800000 - 12000) {
-                            Toast.makeText(ctx, String.valueOf(millisUntilFinished), Toast.LENGTH_LONG).show();
+                        if (millisUntilFinished <= 1800000 - 6000) {
+                            //Toast.makeText(ctx, String.valueOf(millisUntilFinished), Toast.LENGTH_LONG).show();
                             displayView();
                         }
                         // Display Data by Every Ten Second
@@ -147,7 +154,7 @@ public class UpdateService extends Service {
                 }.start();
                 activeSession = new Session(new Date(), null);
                 activeSession.save();
-                Toast.makeText(this, new Date().toString(), Toast.LENGTH_LONG).show();
+                //Toast.makeText(this, new Date().toString(), Toast.LENGTH_LONG).show();
                 Log.i("Service", "Screen On");
             }
         } else {
@@ -155,6 +162,7 @@ public class UpdateService extends Service {
         }
         return Service.START_STICKY;
     }
+
 
     public void displayView() {
 
@@ -173,11 +181,11 @@ public class UpdateService extends Service {
         //alarmImage.setImageResource(R.drawable.abc_ic_menu_cut_mtrl_alpha);
         button = new FloatingActionButton(ctx);//(FloatingActionButton) layout.findViewById(R.id.pink_icon);
         button.setSize(FloatingActionButton.SIZE_MINI);
-        button.setColorNormalResId(R.color.pink);
-        button.setColorPressedResId(R.color.pink_pressed);
+        button.setColorNormalResId(R.color.smoky_green);
+        button.setColorPressedResId(R.color.normal_green);
         button.setIcon(R.drawable.abc_ic_menu_cut_mtrl_alpha);
         button.setStrokeVisible(false);
-        Toast.makeText(ctx, "tick", Toast.LENGTH_LONG).show();
+        //Toast.makeText(ctx, "tick", Toast.LENGTH_LONG).show();
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -190,26 +198,43 @@ public class UpdateService extends Service {
         params.y = 100;
         windowManager.addView(button, params);
         //windowManager.addView(alarmImage, params);
+//        dialog = new MaterialDialog.Builder(ctx)
+//                .title(R.string.abc_action_bar_home_description)
+//                .content(R.string.abc_action_bar_up_description)
+//                .positiveText(R.string.abc_search_hint)
+//                .negativeText(R.string.abc_searchview_description_voice)
+//                .build();
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //Toast.makeText(ctx, "tick", Toast.LENGTH_LONG).show();
+
+            }
+        });
 
         button.setOnTouchListener(new View.OnTouchListener() {
             private int initialX;
             private int initialY;
             private float initialTouchX;
             private float initialTouchY;
-
-
+            private static final int MAX_CLICK_DURATION = 200;
+            private long startClickTime;
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                        Toast.makeText(ctx, "tick", Toast.LENGTH_LONG).show();
-
+                        startClickTime = Calendar.getInstance().getTimeInMillis();
                         initialX = params.x;
                         initialY = params.y;
                         initialTouchX = event.getRawX();
                         initialTouchY = event.getRawY();
+                        displayDismissPanel();
                         return true;
                     case MotionEvent.ACTION_UP:
+                        long clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
+                        if(clickDuration < MAX_CLICK_DURATION) {
+                            displayCountdownPanel();
+                        }
                         return true;
                     case MotionEvent.ACTION_MOVE:
                         params.x = initialX + (int) (event.getRawX() - initialTouchX);
@@ -220,6 +245,60 @@ public class UpdateService extends Service {
                 return false;
             }
         });
+    }
+
+    public void displayDismissPanel() {}
+
+    public void displayCountdownPanel() {
+        countdownLayout = new LinearLayout(getApplicationContext());
+        WindowManager.LayoutParams handleParams =  new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.TYPE_PHONE,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE// |
+                //       WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
+                //       WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                //       WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                ,PixelFormat.TRANSPARENT);
+
+        countdownLayout.setBackgroundColor(getResources().getColor(R.color.normal_gray));
+        final TextView view = new TextView(ctx);
+        view.setGravity(Gravity.CENTER);
+        view.setText("20");
+        view.setTextColor(getResources().getColor(R.color.dark_gray));
+        view.setTextSize(40);
+        CountDownTimer timer =new CountDownTimer(20000,1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                view.setText(String.valueOf(millisUntilFinished / 1000));
+            }
+
+            @Override
+            public void onFinish() {
+                windowManager.removeView(countdownLayout);
+            }
+        }.start();
+
+        closebutton = new FloatingActionButton(ctx);//(FloatingActionButton) layout.findViewById(R.id.pink_icon);
+        closebutton.setSize(FloatingActionButton.SIZE_MINI);
+        closebutton.setColorNormalResId(R.color.smoky_green);
+        closebutton.setColorPressedResId(R.color.normal_green);
+        closebutton.setIcon(R.drawable.abc_ic_clear_mtrl_alpha);
+        closebutton.setStrokeVisible(false);
+        closebutton.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event1) {
+                if (event1.getAction() == MotionEvent.ACTION_UP) {
+                    Log.i("remove View", "remove view");
+                    windowManager.removeView(countdownLayout);
+                    return true;
+                }
+                return true;
+            }
+        });
+        countdownLayout.addView(closebutton);
+        countdownLayout.addView(view);
+        windowManager.addView(countdownLayout, handleParams);
     }
 
 

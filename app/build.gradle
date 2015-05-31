@@ -29,4 +29,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:22.1.1'
     compile 'com.michaelpardo:activeandroid:3.1.0-SNAPSHOT'
     compile 'com.getbase:floatingactionbutton:1.9.0'
+    compile 'com.afollestad:material-dialogs:0.7.4.2'
 }
