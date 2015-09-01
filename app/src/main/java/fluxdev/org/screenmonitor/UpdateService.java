@@ -132,9 +132,9 @@ public class UpdateService extends Service {
                 heartbeatTimer.scheduleAtFixedRate(new HeartBeatTask(), 0, 30000);
 
                 // 3. Start the 20 minutes alarm
-                //lockActivityTimer = new CountDownTimer(18000000,12000000) // Timer for 5 hours with step 20 minutes
+                lockActivityTimer = new CountDownTimer(18000000,12000000) // Timer for 5 hours with step 20 minutes
 
-                lockActivityTimer = new CountDownTimer(1800000,6000) // Timer for 5 hours with step 20 minutes
+                //lockActivityTimer = new CountDownTimer(1800000,6000) // Timer for 5 hours with step 20 minutes
                 {
                     @Override
                     public void onTick(long millisUntilFinished)
