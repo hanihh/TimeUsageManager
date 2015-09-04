@@ -20,7 +20,7 @@ public class MainActivity extends ActionBarActivity {
         //Category cat = new Category();
         //cat.save();
         //session.save();
-        Intent serviceIntent = new Intent("org.fluxdev.START_SERVICE");
+        Intent serviceIntent = new Intent(this, UpdateService.class);
         this.startService(serviceIntent);
     }
 

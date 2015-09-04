@@ -39,7 +39,7 @@ public class UpdateService extends Service {
     private LinearLayout countdownLayout;
     private FloatingActionButton closebutton;
     private Context ctx;
-
+    private int stepSecond;
     Session activeSession;
     public UpdateService() {
     }
@@ -55,7 +55,8 @@ public class UpdateService extends Service {
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_BOOT_COMPLETED);
-
+        stepSecond = 6000;
+        //stepSecond = 12000000; // 20 minutes * 60 *60
         BroadcastReceiver mReceiver = new ScreenReceiver();
         registerReceiver(mReceiver, filter);
     }
@@ -83,6 +84,7 @@ public class UpdateService extends Service {
 
 
     @Override
+
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null) {
             boolean screenOff = intent.getBooleanExtra("screen_state", false);
@@ -124,6 +126,10 @@ public class UpdateService extends Service {
                             last.setEndDate(beat.getBeat());
                             last.save();
                         }
+                         else {
+                            last.setEndDate(last.getStartDate());
+                            last.save();
+                        }
                     }
                 }
 
@@ -132,14 +138,14 @@ public class UpdateService extends Service {
                 heartbeatTimer.scheduleAtFixedRate(new HeartBeatTask(), 0, 30000);
 
                 // 3. Start the 20 minutes alarm
-                lockActivityTimer = new CountDownTimer(18000000,12000000) // Timer for 5 hours with step 20 minutes
+                //lockActivityTimer = new CountDownTimer(18000000,12000000) // Timer for 5 hours with step 20 minutes
 
-                //lockActivityTimer = new CountDownTimer(1800000,6000) // Timer for 5 hours with step 20 minutes
+                lockActivityTimer = new CountDownTimer(1800000,stepSecond) // Timer for 5 hours with step 20 minutes
                 {
                     @Override
                     public void onTick(long millisUntilFinished)
                     {
-                        if (millisUntilFinished <= 1800000 - 6000) {
+                        if ((millisUntilFinished <= 1800000 - stepSecond)&&(button == null)) {
                             //Toast.makeText(ctx, String.valueOf(millisUntilFinished), Toast.LENGTH_LONG).show();
                             displayView();
                         }
@@ -152,6 +158,8 @@ public class UpdateService extends Service {
                     }
 
                 }.start();
+
+                // 4. open new session
                 activeSession = new Session(new Date(), null);
                 activeSession.save();
                 //Toast.makeText(this, new Date().toString(), Toast.LENGTH_LONG).show();
@@ -180,11 +188,11 @@ public class UpdateService extends Service {
         //alarmImage = new ImageView(ctx);
         //alarmImage.setImageResource(R.drawable.abc_ic_menu_cut_mtrl_alpha);
         button = new FloatingActionButton(ctx);//(FloatingActionButton) layout.findViewById(R.id.pink_icon);
-        button.setSize(FloatingActionButton.SIZE_MINI);
+        button.setSize(FloatingActionButton.SIZE_NORMAL);
         button.setColorNormalResId(R.color.smoky_green);
         button.setColorPressedResId(R.color.normal_green);
         button.setIcon(R.drawable.abc_ic_menu_cut_mtrl_alpha);
-        button.setStrokeVisible(false);
+        button.setStrokeVisible(true);
         //Toast.makeText(ctx, "tick", Toast.LENGTH_LONG).show();
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -228,11 +236,13 @@ public class UpdateService extends Service {
                         initialY = params.y;
                         initialTouchX = event.getRawX();
                         initialTouchY = event.getRawY();
-                        displayDismissPanel();
+                        //displayDismissPanel();
                         return true;
                     case MotionEvent.ACTION_UP:
                         long clickDuration = Calendar.getInstance().getTimeInMillis() - startClickTime;
                         if(clickDuration < MAX_CLICK_DURATION) {
+                            windowManager.removeViewImmediate(button);
+                            button=null;
                             displayCountdownPanel();
                         }
                         return true;
@@ -252,8 +262,8 @@ public class UpdateService extends Service {
     public void displayCountdownPanel() {
         countdownLayout = new LinearLayout(getApplicationContext());
         WindowManager.LayoutParams handleParams =  new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
                 WindowManager.LayoutParams.TYPE_PHONE,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE// |
                 //       WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
@@ -263,11 +273,11 @@ public class UpdateService extends Service {
 
         countdownLayout.setBackgroundColor(getResources().getColor(R.color.normal_gray));
         final TextView view = new TextView(ctx);
-        view.setGravity(Gravity.CENTER);
+        view.setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
         view.setText("20");
         view.setTextColor(getResources().getColor(R.color.dark_gray));
         view.setTextSize(40);
-        CountDownTimer timer =new CountDownTimer(20000,1000) {
+        CountDownTimer timer = new CountDownTimer(20000,1000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 view.setText(String.valueOf(millisUntilFinished / 1000));
@@ -275,7 +285,8 @@ public class UpdateService extends Service {
 
             @Override
             public void onFinish() {
-                windowManager.removeView(countdownLayout);
+                if (countdownLayout != null)
+                    windowManager.removeView(countdownLayout);
             }
         }.start();
 
@@ -291,6 +302,7 @@ public class UpdateService extends Service {
                 if (event1.getAction() == MotionEvent.ACTION_UP) {
                     Log.i("remove View", "remove view");
                     windowManager.removeView(countdownLayout);
+                    countdownLayout = null;
                     return true;
                 }
                 return true;
